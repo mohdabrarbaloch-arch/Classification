@@ -26,12 +26,15 @@ def train_models():
     data = data.dropna()
     cat_cols = ['occupation_status', 'product_type', 'loan_intent']
     data = pd.get_dummies(data, columns=cat_cols, drop_first=True)
+    for col in data.columns:
+        data[col] = pd.to_numeric(data[col], errors='coerce')
+    data = data.dropna()
     X = data.drop('loan_status', axis=1)
     y = data['loan_status']
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     scaler = StandardScaler()
-    X_train_s = scaler.fit_transform(X_train)
-    X_test_s = scaler.transform(X_test)
+    X_train_s = scaler.fit_transform(X_train.values)
+    X_test_s = scaler.transform(X_test.values)
     models = {
         'Logistic Regression': LogisticRegression(max_iter=1000),
         'Decision Tree': DecisionTreeClassifier(max_depth=5, random_state=42),
@@ -84,7 +87,7 @@ if st.button("🔍 Predict Loan Status", use_container_width=True, type="primary
         if col not in input_df.columns:
             input_df[col] = 0
     input_df = input_df[feature_names]
-    input_scaled = scaler.transform(input_df)
+    input_scaled = scaler.transform(input_df.values)
     result = model.predict(input_scaled)[0]
     st.markdown('<div class="card">', unsafe_allow_html=True)
     if result == 1:
