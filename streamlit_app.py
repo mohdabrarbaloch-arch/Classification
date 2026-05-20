@@ -24,17 +24,15 @@ st.markdown("""
 def train_models():
     data = pd.read_csv("Loan_approval_data_2025.csv")
     data = data.dropna()
-    cat_cols = ['occupation_status', 'product_type', 'loan_intent']
-    data = pd.get_dummies(data, columns=cat_cols, drop_first=True)
-    for col in data.columns:
-        data[col] = pd.to_numeric(data[col], errors='coerce')
-    data = data.dropna()
-    X = data.drop('loan_status', axis=1)
     y = data['loan_status']
+    X = data.drop(['loan_status', 'customer_id'], axis=1)
+    X = pd.get_dummies(X, columns=['occupation_status', 'product_type', 'loan_intent'], drop_first=True)
+    X = X.select_dtypes(include=['number'])
+    X = X.fillna(0)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     scaler = StandardScaler()
-    X_train_s = scaler.fit_transform(X_train.values)
-    X_test_s = scaler.transform(X_test.values)
+    X_train_s = scaler.fit_transform(X_train)
+    X_test_s = scaler.transform(X_test)
     models = {
         'Logistic Regression': LogisticRegression(max_iter=1000),
         'Decision Tree': DecisionTreeClassifier(max_depth=5, random_state=42),
@@ -82,12 +80,13 @@ if st.button("🔍 Predict Loan Status", use_container_width=True, type="primary
         "interest_rate": interest_rate, "employment_years": employment_years,
         "occupation_status": occupation, "product_type": product_type, "loan_intent": loan_intent
     }])
-    input_df = pd.get_dummies(input_df)
+    input_encoded = pd.get_dummies(input_df, columns=['occupation_status', 'product_type', 'loan_intent'], drop_first=True)
+    input_encoded = input_encoded.select_dtypes(include=['number'])
     for col in feature_names:
-        if col not in input_df.columns:
-            input_df[col] = 0
-    input_df = input_df[feature_names]
-    input_scaled = scaler.transform(input_df.values)
+        if col not in input_encoded.columns:
+            input_encoded[col] = 0
+    input_encoded = input_encoded[feature_names].fillna(0)
+    input_scaled = scaler.transform(input_encoded)
     result = model.predict(input_scaled)[0]
     st.markdown('<div class="card">', unsafe_allow_html=True)
     if result == 1:
